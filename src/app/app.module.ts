@@ -7,6 +7,7 @@ import { AppComponent } from './app.component';
 import { ExchangeRatesComponent } from './exchange-rates/exchange-rates.component';
 import { UpperCasePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Daterangepicker } from 'ng2-daterangepicker';
 
 @NgModule({
   declarations: [
@@ -18,6 +19,7 @@ import { FormsModule } from '@angular/forms';
     AppRoutingModule,
     HttpClientModule,
     FormsModule,
+    Daterangepicker
   ],
   providers: [UpperCasePipe],
   bootstrap: [AppComponent]

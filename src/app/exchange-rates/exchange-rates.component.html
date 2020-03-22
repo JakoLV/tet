@@ -28,7 +28,13 @@
             </select>
         </div>
         <div class="col-12 col-xs-6 col-sm-4 form-group mb-4">
-            
+            <input 
+                type="text" 
+                name="daterangeInput" 
+                daterangepicker 
+                class="form-control form-control-lg"
+                [options]="options"
+                (selected)="selectedDate($event, daterange); checkRates($event)" />
         </div>
     </div>
     <div class="row">
