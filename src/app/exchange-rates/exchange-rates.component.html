@@ -1,0 +1,43 @@
+<div class="container">
+    <div class="row">
+        <div class="col mb-2">
+            <h3>Exchange rates for {{ symbols | uppercase }}</h3>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <div class="col-12 col-xs-6 col-sm-4 form-group mb-4">
+            <label for="exampleFormControlFile1">Currency</label>
+            <select 
+                name="currency"
+                id="currency"
+                class="form-control form-control-lg"
+                [(ngModel)]="symbols"
+                (change)="checkRates($event)">
+                <!-- Only here because API doesn't return a `rates.EUR` property if `base=EUR`. Go figure. -->
+                <option *ngIf="symbols === 'EUR'" [value]="symbols"> {{ symbols | uppercase }}</option>
+                <!-- END Only here.. -->
+                <option 
+                    *ngFor="let item of exchangeRates?.rates | keyvalue"
+                    [value]="item.key"
+                    [selected]="item.key === symbols">
+                    {{ item.key }}
+                </option>
+            </select>
+        </div>
+        <div class="col-12 col-xs-6 col-sm-4 form-group mb-4">
+            
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-6 col-xs-4 col-sm-4 col-md-3" *ngFor="let item of exchangeRates?.rates | keyvalue">
+            <div class="row">
+                <div class="col-3"> <b>{{ item.key }}</b> </div>
+                <div class="col-9"> {{ item.value | number:'1.2-4':'lv-LV' }} </div>
+            </div>
+        </div>
+    </div>
+</div>
+
