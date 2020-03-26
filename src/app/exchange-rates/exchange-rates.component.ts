@@ -1,12 +1,12 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormGroup } from '@angular/forms';
-import * as moment from 'moment';
+import { take } from 'rxjs/operators';
 
 import { UpperCasePipe, registerLocaleData } from '@angular/common';
 import localeLv from '@angular/common/locales/lv';
+import { ExchangeRatesService } from '../shared/services/exchange-rates.service';
+import * as moment from 'moment';
 registerLocaleData(localeLv, 'lv-LV');
 
 @Component({
@@ -17,54 +17,74 @@ registerLocaleData(localeLv, 'lv-LV');
 export class ExchangeRatesComponent implements OnInit {
 
   public selectCurrencyForm: FormGroup;
-  public exchangeRates: any;
-  public currencies: [];
+  public defaultBase = 'EUR';
+  public exchangeRates = [];
+  public currencies: string[] = [];
   public daterange: any = {};
   public options: any = {
-    locale: { format: 'DD/MM/YYYY' },
+    startDate: moment(),
+    weekStart: 1,
+    locale: {
+      format: 'DD/MM/YYYY',
+      firstDay: 1
+    },
     alwaysShowCalendars: true,
+    singleDatePicker: !this.route.snapshot.paramMap.get('symbols')
   };
+  public noResults = false;
 
   private symbols: string;
 
   constructor(
     private route: ActivatedRoute,
-    private http: HttpClient,
+    private router: Router,
     private upperCasePipe: UpperCasePipe,
+    private exchangeRatesService: ExchangeRatesService,
   ) { }
 
   ngOnInit() {
     this.symbols = this.route.snapshot.paramMap.get('symbols') ?
-      this.upperCasePipe.transform(this.route.snapshot.paramMap.get('symbols')) : 'EUR';
+      this.upperCasePipe.transform(this.route.snapshot.paramMap.get('symbols')) : this.defaultBase;
 
-    this.getRates(this.symbols).subscribe(res => {
-      this.exchangeRates = res;
+    this.exchangeRatesService.getLatest(this.symbols).pipe(take(1)).subscribe(res => {
+      this.exchangeRates.push( { date: res.date, rates: res.rates } );
+      Object.keys(res.rates).forEach(key => {
+        this.currencies.push(key);
+      });
+      // Next line only here because API doesn't return a `rates.EUR` property if `base=EUR`. Go figure.
+      if (this.currencies.indexOf(this.defaultBase) < 0) { this.currencies.push(this.defaultBase); }
+      this.currencies.sort();
+      document.querySelector('#loader').classList.add('fade-out');
     });
   }
 
   /**
    * Get currency exchange rates
    */
-  public getRates(symbols: any): Observable<any> {
-    this.symbols = this.upperCasePipe.transform(symbols);
-    if (!this.daterange.start) {
-      return this.http.get(`https://api.exchangeratesapi.io/latest?base=${this.upperCasePipe.transform(symbols)}`);
-    } else {
-      return this.http.get(`https://api.exchangeratesapi.io/history?
-start_at=${moment(this.daterange.start).format('YYYY-MM-DD')}&
-end_at=${moment(this.daterange.end).format('YYYY-MM-DD')}&
-base=${this.upperCasePipe.transform(symbols)}`);
-    }
+  public showHistory(symbols) {
+    this.router.navigate(['/exchange-rates/' + symbols]);
   }
 
   /**
    * Check rates for specified currency
    */
   public checkRates(event: any) {
-    this.getRates(!!event ? this.symbols : event.target.value).subscribe(res => {
-      this.exchangeRates = res;
-      console.log(res.rates);
-      
+    document.querySelector('#loader').classList.remove('fade-out');
+    this.exchangeRates = [];
+    this.exchangeRatesService.getHistory(
+      this.symbols,
+      this.daterange.start,
+      this.daterange.end).pipe(take(1)).subscribe(res => {
+      this.noResults = Object.keys(res.rates).length === 0 && res.rates.constructor === Object;
+
+      // tslint:disable-next-line:forin
+      for (const key in res.rates) {
+        this.exchangeRates.push( { date: key, rates: res.rates[key] } );
+      }
+      this.exchangeRates.sort((a, b) => {
+        return a.date.localeCompare(b.date);
+      });
+      document.querySelector('#loader').classList.add('fade-out');
     });
   }
 
@@ -74,10 +94,17 @@ base=${this.upperCasePipe.transform(symbols)}`);
   public selectedDate(value: any, datepicker?: any) {
     datepicker.start = value.start;
     datepicker.end = value.end;
-
     this.daterange.start = value.start;
     this.daterange.end = value.end;
     this.daterange.label = value.label;
+  }
+
+  /**
+   * Datepicker filter out weekend dates (no rates available)
+   */
+  public myFilter = (d: Date): boolean => {
+    const day = d.getDay();
+    return day !== 0 && day !== 6;
   }
 
 }

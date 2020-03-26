@@ -1,7 +1,7 @@
 <div class="container">
     <div class="row">
         <div class="col mb-2">
-            <h3>Exchange rates for {{ symbols | uppercase }}</h3>
+            <h3>Exchange rates <span *ngIf="!options.singleDatePicker">history</span> for {{ symbols | uppercase }}</h3>
         </div>
     </div>
 </div>
@@ -9,41 +9,70 @@
 <div class="container">
     <div class="row">
         <div class="col-12 col-xs-6 col-sm-4 form-group mb-4">
-            <label for="exampleFormControlFile1">Currency</label>
+            <label for="daterangeInput">Date</label>
+            <input 
+                type="text" 
+                name="daterangeInput" 
+                id="daterangeInput" 
+                daterangepicker 
+                class="form-control form-control-lg"
+                [options]="options"
+                (selected)="selectedDate($event, daterange); checkRates($event)" />
+        </div>
+        <div class="col-12 col-xs-6 col-sm-4 form-group mb-4">
+            <label for="currency">Currency</label>
             <select 
                 name="currency"
                 id="currency"
                 class="form-control form-control-lg"
                 [(ngModel)]="symbols"
                 (change)="checkRates($event)">
-                <!-- Only here because API doesn't return a `rates.EUR` property if `base=EUR`. Go figure. -->
-                <option *ngIf="symbols === 'EUR'" [value]="symbols"> {{ symbols | uppercase }}</option>
-                <!-- END Only here.. -->
                 <option 
-                    *ngFor="let item of exchangeRates?.rates | keyvalue"
-                    [value]="item.key"
-                    [selected]="item.key === symbols">
-                    {{ item.key }}
+                    *ngFor="let item of currencies"
+                    [value]="item"
+                    [selected]="item === symbols">
+                    {{ item }}
                 </option>
             </select>
         </div>
         <div class="col-12 col-xs-6 col-sm-4 form-group mb-4">
-            <input 
-                type="text" 
-                name="daterangeInput" 
-                daterangepicker 
-                class="form-control form-control-lg"
-                [options]="options"
-                (selected)="selectedDate($event, daterange); checkRates($event)" />
+            <label for="currency">&nbsp;</label><br>
+            <button 
+                *ngIf="!options.singleDatePicker"
+                type="button"
+                class="btn btn-secondary btn-sm"
+                [routerLink]="['/']" routerLinkActive="router-link-active" >
+                <img 
+                    src="./../../assets/img/icon-home.png"
+                    width="16"
+                    alt="">
+            </button>
+            <button
+                *ngIf="options.singleDatePicker"
+                type="button"
+                class="btn btn-primary btn-sm"
+                (click)="showHistory(symbols)">Show history</button>
         </div>
     </div>
     <div class="row">
-        <div class="col-6 col-xs-4 col-sm-4 col-md-3" *ngFor="let item of exchangeRates?.rates | keyvalue">
+        <div class="col-sm-12" *ngIf="noResults">
+            <div>No rates available</div>
+        </div>
+        <div class="col-sm-12 mb-5" *ngFor="let item of exchangeRates">
+            <h3>{{ item.date }}</h3>
+            <hr class="mt-2 mb-3">
             <div class="row">
-                <div class="col-3"> <b>{{ item.key }}</b> </div>
-                <div class="col-9"> {{ item.value | number:'1.2-4':'lv-LV' }} </div>
+                <div 
+                    *ngFor="let currency of item.rates | keyvalue"
+                    class="col-6 col-xs-4 col-sm-4 col-md-3"
+                    [ngClass]="{ 'selected-currency': currency.key === symbols }">
+                    <div class="row">
+                        <div class="col-3"> <b>{{ currency.key }}</b> </div>
+                        <div class="col-9"> {{ currency.value | number:'1.2-4':'lv-LV' }} </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
-
+<div id="loader"></div>

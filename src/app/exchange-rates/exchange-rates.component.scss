@@ -1,0 +1,21 @@
+#loader {
+	position: fixed;
+	left: 0px;
+	top: 0px;
+	width: 100%;
+	height: 100%;
+	z-index: 9999;
+    background: url(/assets/img/Preloader_11.gif) center no-repeat #fff;
+    opacity: 1;
+    transition: all 0.5s ease-in-out;
+    
+    &.fade-out {
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.2s ease-in-out;
+    }
+}
+
+.selected-currency {
+    display: none;
+}
